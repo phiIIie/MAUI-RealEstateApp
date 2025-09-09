@@ -13,17 +13,26 @@
     <ContentPage.ToolbarItems>
         <ToolbarItem Command="{Binding CancelSaveCommand}" Text="Cancel" />
         <ToolbarItem Command="{Binding SavePropertyCommand}" Text="Save" />
+        <ToolbarItem Command="{Binding ToggleFlashlightCommand}" IconImageSource="flashlight.png" />
     </ContentPage.ToolbarItems>
 
     <ContentPage.Content>
         <StackLayout BackgroundColor="#E8E8E8">
+            <!-- Status messages -->
             <Label
                 BackgroundColor="{Binding StatusColor}"
                 IsVisible="{Binding StatusMessage, Converter={converters:StringBoolConverter}}"
                 Text="{Binding StatusMessage}" />
+
+            <Label
+                BackgroundColor="{Binding BatteryColor}"
+                IsVisible="{Binding BatteryMessage, Converter={converters:StringBoolConverter}}"
+                Text="{Binding BatteryMessage}" />
+
             <ScrollView VerticalOptions="FillAndExpand">
                 <StackLayout Padding="15" Spacing="20">
 
+                    <!-- Address -->
                     <Label FontSize="Medium">
                         <Label.FormattedText>
                             <FormattedString>
@@ -33,7 +42,15 @@
                             </FormattedString>
                         </Label.FormattedText>
                     </Label>
-                    <Entry FontSize="Medium" Text="{Binding Property.Address}" />
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Entry FontSize="Medium" Text="{Binding Property.Address}" />
+                        <Button
+                            Text="{x:Static fa:IconFont.Home}"
+                            FontFamily="FA-solid"
+                            Command="{Binding GeocodeAddressCommand}"
+                            IsEnabled="{Binding IsConnected}" />
+                    </Grid>
 
                     <!-- Location -->
                     <Label FontSize="Medium">
@@ -45,25 +62,18 @@
                             </FormattedString>
                         </Label.FormattedText>
                     </Label>
-                    <Grid ColumnDefinitions="*,*,Auto,Auto" RowDefinitions="Auto" Margin="0,5,0,0">
+
+                    <Grid ColumnDefinitions="*,*,Auto" RowDefinitions="Auto" Margin="0,5,0,0">
                         <Label Text="{Binding Latitude}" Grid.Column="0" />
                         <Label Text="{Binding Longitude}" Grid.Column="1" />
-
-                        <!-- Thumbtack button for current location -->
                         <Button 
                             Text="{x:Static fa:IconFont.Thumbtack}" 
                             FontFamily="FA-solid"
                             Command="{Binding GetCurrentLocationCommand}"
                             Grid.Column="2" />
-
-                        <!-- Home button for manually entered address -->
-                        <Button
-                            Text="{x:Static fa:IconFont.Home}"
-                            FontFamily="FA-solid"
-                            Command="{Binding GetCoordinatesFromAddressCommand}"
-                            Grid.Column="3" />
                     </Grid>
 
+                    <!-- Price -->
                     <Label FontFamily="FA-solid" FontSize="Medium">
                         <Label.FormattedText>
                             <FormattedString>
@@ -75,6 +85,7 @@
                     </Label>
                     <Entry FontSize="Medium" Text="{Binding Property.Price, Converter={converters:NullableIntConverter}}" />
 
+                    <!-- Beds -->
                     <Label FontSize="Medium">
                         <Label.FormattedText>
                             <FormattedString>
@@ -84,12 +95,9 @@
                             </FormattedString>
                         </Label.FormattedText>
                     </Label>
-                    <Entry
-                        FontSize="Medium"
-                        Keyboard="Numeric"
-                        ReturnType="Next"
-                        Text="{Binding Property.Beds, Converter={converters:NullableIntConverter}}" />
+                    <Entry FontSize="Medium" Keyboard="Numeric" ReturnType="Next" Text="{Binding Property.Beds, Converter={converters:NullableIntConverter}}" />
 
+                    <!-- Baths -->
                     <Label FontSize="Medium">
                         <Label.FormattedText>
                             <FormattedString>
@@ -99,12 +107,9 @@
                             </FormattedString>
                         </Label.FormattedText>
                     </Label>
-                    <Entry
-                        FontSize="Medium"
-                        Keyboard="Numeric"
-                        ReturnType="Next"
-                        Text="{Binding Property.Baths, Converter={converters:NullableIntConverter}}" />
+                    <Entry FontSize="Medium" Keyboard="Numeric" ReturnType="Next" Text="{Binding Property.Baths, Converter={converters:NullableIntConverter}}" />
 
+                    <!-- Parking -->
                     <Label FontSize="Medium">
                         <Label.FormattedText>
                             <FormattedString>
@@ -114,12 +119,9 @@
                             </FormattedString>
                         </Label.FormattedText>
                     </Label>
-                    <Entry
-                        FontSize="Medium"
-                        Keyboard="Numeric"
-                        ReturnType="Next"
-                        Text="{Binding Property.Parking, Converter={converters:NullableIntConverter}}" />
+                    <Entry FontSize="Medium" Keyboard="Numeric" ReturnType="Next" Text="{Binding Property.Parking, Converter={converters:NullableIntConverter}}" />
 
+                    <!-- Land size -->
                     <Label FontSize="Medium">
                         <Label.FormattedText>
                             <FormattedString>
@@ -131,12 +133,9 @@
                             </FormattedString>
                         </Label.FormattedText>
                     </Label>
-                    <Entry
-                        FontSize="Medium"
-                        Keyboard="Numeric"
-                        ReturnType="Next"
-                        Text="{Binding Property.LandSize, Converter={converters:NullableIntConverter}}" />
+                    <Entry FontSize="Medium" Keyboard="Numeric" ReturnType="Next" Text="{Binding Property.LandSize, Converter={converters:NullableIntConverter}}" />
 
+                    <!-- Description -->
                     <Label FontSize="Medium">
                         <Label.FormattedText>
                             <FormattedString>
@@ -146,15 +145,9 @@
                             </FormattedString>
                         </Label.FormattedText>
                     </Label>
-                    <Editor
-                        Margin="0"
-                        AutoSize="TextChanges"
-                        FontSize="Medium"
-                        IsSpellCheckEnabled="False"
-                        IsTextPredictionEnabled="False"
-                        Keyboard="Text"
-                        Text="{Binding Property.Description}" />
+                    <Editor Margin="0" AutoSize="TextChanges" FontSize="Medium" IsSpellCheckEnabled="False" IsTextPredictionEnabled="False" Keyboard="Text" Text="{Binding Property.Description}" />
 
+                    <!-- Agent -->
                     <Label FontSize="Medium">
                         <Label.FormattedText>
                             <FormattedString>
@@ -164,11 +157,8 @@
                             </FormattedString>
                         </Label.FormattedText>
                     </Label>
-                    <Picker
-                        FontSize="Medium"
-                        ItemDisplayBinding="{Binding Name}"
-                        ItemsSource="{Binding Agents}"
-                        SelectedItem="{Binding SelectedAgent}" />
+                    <Picker FontSize="Medium" ItemDisplayBinding="{Binding Name}" ItemsSource="{Binding Agents}" SelectedItem="{Binding SelectedAgent}" />
+
                 </StackLayout>
             </ScrollView>
         </StackLayout>

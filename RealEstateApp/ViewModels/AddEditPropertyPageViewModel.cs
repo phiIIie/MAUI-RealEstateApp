@@ -1,6 +1,7 @@
 ﻿using RealEstateApp.Models;
 using RealEstateApp.Services;
 using Microsoft.Maui.Devices.Sensors;
+using Microsoft.Maui.Devices;
 using Microsoft.Maui.Networking;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
@@ -9,7 +10,7 @@ namespace RealEstateApp.ViewModels;
 
 [QueryProperty(nameof(Mode), "mode")]
 [QueryProperty(nameof(Property), "MyProperty")]
-public class AddEditPropertyPageViewModel : BaseViewModel, IDisposable
+public class AddEditPropertyPageViewModel : BaseViewModel
 {
     readonly IPropertyService service;
     readonly IConnectivity connectivity;
@@ -18,17 +19,21 @@ public class AddEditPropertyPageViewModel : BaseViewModel, IDisposable
     {
         this.service = service;
         this.connectivity = connectivity;
-        this.connectivity.ConnectivityChanged += Connectivity_ConnectivityChanged;
+
         Agents = new ObservableCollection<Agent>(service.GetAgents());
 
         GetCurrentLocationCommand = new Command(async () => await GetCurrentLocation());
-        GetCoordinatesFromAddressCommand = new Command(async () => await ResolveAddressToCoordinates(),
-                                                      () => connectivity.NetworkAccess == NetworkAccess.Internet);
+        GeocodeAddressCommand = new Command(async () => await GeocodeAddress(), () => IsConnected);
+        ToggleFlashlightCommand = new Command(async () => await ToggleFlashlight());
 
-        Command CancelCommand = new Command(async () => await Shell.Current.GoToAsync(".."));
-
+        // Subscribe to connectivity changes
         connectivity.ConnectivityChanged += Connectivity_ConnectivityChanged;
+
+        // Subscribe to battery changes
+        Battery.Default.BatteryInfoChanged += Battery_BatteryInfoChanged;
+
         CheckConnectivity();
+        UpdateBatteryStatus();
     }
 
     #region PROPERTIES
@@ -67,89 +72,90 @@ public class AddEditPropertyPageViewModel : BaseViewModel, IDisposable
         }
     }
 
-    private string statusMessage;
-    public string StatusMessage
-    {
-        get => statusMessage;
-        set => SetProperty(ref statusMessage, value);
-    }
-
-    private Color statusColor;
-    public Color StatusColor
-    {
-        get => statusColor;
-        set => SetProperty(ref statusColor, value);
-    }
-
     private string latitude;
-    public string Latitude
-    {
-        get => latitude;
-        set => SetProperty(ref latitude, value);
-    }
+    public string Latitude { get => latitude; set => SetProperty(ref latitude, value); }
 
     private string longitude;
-    public string Longitude
-    {
-        get => longitude;
-        set => SetProperty(ref longitude, value);
-    }
+    public string Longitude { get => longitude; set => SetProperty(ref longitude, value); }
 
-    private bool isGeocodingEnabled;
-    public bool IsGeocodingEnabled
-    {
-        get => isGeocodingEnabled;
-        set => SetProperty(ref isGeocodingEnabled, value);
-    }
+    private string statusMessage;
+    public string StatusMessage { get => statusMessage; set => SetProperty(ref statusMessage, value); }
+
+    private Color statusColor;
+    public Color StatusColor { get => statusColor; set => SetProperty(ref statusColor, value); }
+
+    private bool isConnected;
+    public bool IsConnected { get => isConnected; set => SetProperty(ref isConnected, value); }
+
+    private string batteryMessage;
+    public string BatteryMessage { get => batteryMessage; set => SetProperty(ref batteryMessage, value); }
+
+    private Color batteryColor;
+    public Color BatteryColor { get => batteryColor; set => SetProperty(ref batteryColor, value); }
+
+    private bool flashlightOn;
+    public bool FlashlightOn { get => flashlightOn; set => SetProperty(ref flashlightOn, value); }
     #endregion
 
     #region COMMANDS
+    public ICommand GetCurrentLocationCommand { get; }
+    public ICommand GeocodeAddressCommand { get; }
+    public ICommand ToggleFlashlightCommand { get; }
+
     private Command savePropertyCommand;
     public ICommand SavePropertyCommand => savePropertyCommand ??= new Command(async () => await SaveProperty());
 
-    private Command cancelCommand;
-    public ICommand CancelCommand => cancelCommand ??= new Command(async () => await Shell.Current.GoToAsync(".."));
-
-    public ICommand GetCurrentLocationCommand { get; }
-    public ICommand GetCoordinatesFromAddressCommand { get; }
+    private Command cancelSaveCommand;
+    public ICommand CancelSaveCommand => cancelSaveCommand ??= new Command(async () => await Shell.Current.GoToAsync(".."));
     #endregion
 
-    private async Task SaveProperty()
+    #region CONNECTIVITY
+    private void Connectivity_ConnectivityChanged(object sender, ConnectivityChangedEventArgs e)
     {
-        if (!IsValid())
+        CheckConnectivity();
+    }
+
+    private void CheckConnectivity()
+    {
+        IsConnected = connectivity.NetworkAccess == NetworkAccess.Internet;
+        StatusMessage = IsConnected ? "Connected" : "No internet connection";
+        StatusColor = IsConnected ? Colors.Green : Colors.Red;
+
+        // Refresh Geocode button availability
+        ((Command)GeocodeAddressCommand).ChangeCanExecute();
+    }
+    #endregion
+
+    #region BATTERY
+    private void Battery_BatteryInfoChanged(object sender, BatteryInfoChangedEventArgs e)
+    {
+        UpdateBatteryStatus();
+    }
+
+    private void UpdateBatteryStatus()
+    {
+        var level = Battery.Default.ChargeLevel;
+        var state = Battery.Default.State;
+        var saver = Battery.Default.EnergySaverStatus;
+
+        if (level < 0.2)
         {
-            StatusMessage = "Please fill in all required fields";
-            StatusColor = Colors.Red;
-
-            try
-            {
-                // Vibrate for 5 seconds
-                var duration = TimeSpan.FromSeconds(5);
-                Vibration.Default.Vibrate(duration);
-            }
-            catch
-            {
-                // Not all devices support vibration, ignore exceptions
-            }
-
-            return;
+            BatteryMessage = "Battery low!";
+            if (saver == EnergySaverStatus.On)
+                BatteryColor = Colors.Green;
+            else if (state == BatteryState.Charging)
+                BatteryColor = Colors.Yellow;
+            else
+                BatteryColor = Colors.Red;
         }
-
-        service.SaveProperty(Property);
-        await Shell.Current.GoToAsync("///propertylist");
+        else
+        {
+            BatteryMessage = string.Empty;
+        }
     }
+    #endregion
 
-    public bool IsValid()
-    {
-        if (string.IsNullOrEmpty(Property.Address)
-            || Property.Beds == null
-            || Property.Price == null
-            || Property.AgentId == null)
-            return false;
-        return true;
-    }
-
-    #region LOCATION FUNCTIONS
+    #region LOCATION
     private async Task GetCurrentLocation()
     {
         try
@@ -164,32 +170,31 @@ public class AddEditPropertyPageViewModel : BaseViewModel, IDisposable
                 Property.Latitude = location.Latitude;
                 Property.Longitude = location.Longitude;
 
-                var placemarks = await Geocoding.Default.GetPlacemarksAsync(location.Latitude, location.Longitude);
+                // Reverse geocode
+                var placemarks = await Geocoding.GetPlacemarksAsync(location.Latitude, location.Longitude);
                 var placemark = placemarks?.FirstOrDefault();
                 if (placemark != null)
-                {
-                    Property.Address = $"{placemark.Thoroughfare} {placemark.SubThoroughfare}, {placemark.Locality}, {placemark.PostalCode}, {placemark.CountryName}";
-                }
+                    Property.Address = $"{placemark.Thoroughfare} {placemark.SubThoroughfare}, {placemark.Locality}";
             }
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Kunne ikke hente lokation: {ex.Message}";
+            StatusMessage = $"Could not get location: {ex.Message}";
             StatusColor = Colors.Red;
         }
     }
 
-    private async Task ResolveAddressToCoordinates()
+    private async Task ResolveAddressToLocation(string address)
     {
-        if (string.IsNullOrWhiteSpace(Property.Address))
-        {
-            await Shell.Current.DisplayAlert("Address Missing", "Please enter an address first.", "OK");
-            return;
-        }
-
         try
         {
-            var locations = await Geocoding.Default.GetLocationsAsync(Property.Address);
+            if (string.IsNullOrWhiteSpace(address))
+            {
+                await App.Current.MainPage.DisplayAlert("Input Required", "Please enter an address first.", "OK");
+                return;
+            }
+
+            var locations = await Geocoding.GetLocationsAsync(address);
             var location = locations?.FirstOrDefault();
             if (location != null)
             {
@@ -201,44 +206,57 @@ public class AddEditPropertyPageViewModel : BaseViewModel, IDisposable
         }
         catch (Exception ex)
         {
-            await Shell.Current.DisplayAlert("Error", $"Failed to get coordinates: {ex.Message}", "OK");
+            StatusMessage = $"Could not geocode address: {ex.Message}";
+            StatusColor = Colors.Red;
         }
     }
 
-    private async Task ResolveAddressToLocation(string address)
+    private async Task GeocodeAddress()
+    {
+        await ResolveAddressToLocation(Property.Address);
+    }
+    #endregion
+
+    #region FLASHLIGHT
+    private async Task ToggleFlashlight()
     {
         try
         {
-            var locations = await Geocoding.Default.GetLocationsAsync(address);
-            var location = locations?.FirstOrDefault();
-            if (location != null)
-            {
-                Latitude = location.Latitude.ToString("F6");
-                Longitude = location.Longitude.ToString("F6");
-            }
+            if (!FlashlightOn)
+                await Flashlight.Default.TurnOnAsync();
+            else
+                await Flashlight.Default.TurnOffAsync();
+
+            FlashlightOn = !FlashlightOn;
         }
-        catch
+        catch (Exception ex)
         {
-            // ignore
+            await App.Current.MainPage.DisplayAlert("Flashlight", $"Unable to toggle flashlight: {ex.Message}", "OK");
         }
     }
     #endregion
 
-    #region CONNECTIVITY
-    private void CheckConnectivity()
+    #region SAVE
+    private async Task SaveProperty()
     {
-        IsGeocodingEnabled = connectivity.NetworkAccess == NetworkAccess.Internet;
-        (GetCoordinatesFromAddressCommand as Command)?.ChangeCanExecute();
+        if (!IsValid())
+        {
+            StatusMessage = "Please fill in all required fields";
+            StatusColor = Colors.Red;
+            Vibration.Default.Vibrate(TimeSpan.FromSeconds(5));
+            return;
+        }
+
+        service.SaveProperty(Property);
+        await Shell.Current.GoToAsync("///propertylist");
     }
 
-    private void Connectivity_ConnectivityChanged(object sender, ConnectivityChangedEventArgs e)
+    public bool IsValid()
     {
-        CheckConnectivity();
+        return !string.IsNullOrEmpty(Property.Address)
+            && Property.Beds != null
+            && Property.Price != null
+            && Property.AgentId != null;
     }
     #endregion
-
-    public void Dispose()
-    {
-        connectivity.ConnectivityChanged -= Connectivity_ConnectivityChanged;
-    }
 }
