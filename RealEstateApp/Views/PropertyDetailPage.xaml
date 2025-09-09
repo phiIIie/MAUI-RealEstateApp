@@ -12,7 +12,7 @@
         <ToolbarItem Command="{Binding EditPropertyCommand}" Text="Edit" />
     </ContentPage.ToolbarItems>
 
-    <ScrollView>
+    <ScrollView BackgroundColor="White">
         <Grid
             Padding="15"
             RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
@@ -73,17 +73,21 @@
                 Grid.Row="4"
                 FontSize="14"
                 Text="{Binding Property.LandSize, StringFormat='Land size: {0} &#x33a1;'}" />
-            <Label
-                Grid.Row="5"
-                Margin="0,20,0,0"
-                FontAttributes="Bold"
-                FontSize="14"
-                Text="Description:" />
-            <Label
-                Grid.Row="6"
-                Margin="0,0,0,20"
-                FontSize="14"
-                Text="{Binding Property.Description}" />
+            <Grid Grid.Row="6" Margin="0,0,0,20" ColumnDefinitions="*,Auto,Auto">
+                <Label Text="{Binding Property.Description}" Grid.Column="0" FontSize="14" />
+                <Button 
+                    Grid.Column="1"
+                    Text="{x:Static fa:IconFont.Play}" 
+                    FontFamily="FA-solid"
+                    Command="{Binding SpeakCommand}"
+                    />
+                <Button
+                    Grid.Column="2"
+                    Text="{x:Static fa:IconFont.Stop}"
+                    FontFamily="FA-solid"
+                    Command="{Binding StopCommand}"
+                    IsVisible="{Binding IsSpeaking}" />
+            </Grid>
             <Label
                 Grid.Row="7"
                 FontAttributes="Bold"
@@ -109,7 +113,7 @@
                         FontSize="12"
                         Text="{Binding Agent.Email}" />
                     <Label
-                        Grid.Row="2"
+                        Grid.Row="2" 
                         FontSize="12"
                         Text="{Binding Agent.Phone}" />
                 </Grid>

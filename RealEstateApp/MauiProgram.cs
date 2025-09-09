@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.Maui.Networking;
 using RealEstateApp.Repositories;
 using RealEstateApp.Services;
 using RealEstateApp.ViewModels;
@@ -20,6 +21,10 @@ public static class MauiProgram
                 fonts.AddFont("fa-solid-900.ttf", "FA-solid");
             });
 
+        // Register IConnectivity as a singleton
+        builder.Services.AddSingleton<IConnectivity>(Connectivity.Current);
+
+        // Your existing registrations
         builder.Services.AddSingleton<IPropertyService, MockRepository>();
         builder.Services.AddSingleton<PropertyListPage>();
         builder.Services.AddSingleton<PropertyListPageViewModel>();
