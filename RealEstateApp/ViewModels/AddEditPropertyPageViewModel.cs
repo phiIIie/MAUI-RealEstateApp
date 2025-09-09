@@ -1,28 +1,39 @@
 ﻿using RealEstateApp.Models;
 using RealEstateApp.Services;
+using Microsoft.Maui.Devices.Sensors;
+using Microsoft.Maui.Networking;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
-using Microsoft.Maui.Devices.Sensors;
 
 namespace RealEstateApp.ViewModels;
 
 [QueryProperty(nameof(Mode), "mode")]
 [QueryProperty(nameof(Property), "MyProperty")]
-public class AddEditPropertyPageViewModel : BaseViewModel
+public class AddEditPropertyPageViewModel : BaseViewModel, IDisposable
 {
-    readonly IPropertyService service;
+    private readonly IPropertyService service;
+    private readonly IConnectivity connectivity;
 
-    public AddEditPropertyPageViewModel(IPropertyService service)
+    public AddEditPropertyPageViewModel(IPropertyService service, IConnectivity connectivity)
     {
         this.service = service;
+        this.connectivity = connectivity;
+
         Agents = new ObservableCollection<Agent>(service.GetAgents());
+
         GetCurrentLocationCommand = new Command(async () => await GetCurrentLocation());
-        GetCoordinatesFromAddressCommand = new Command(async () => await ResolveAddressToCoordinates());
+        GetCoordinatesFromAddressCommand = new Command(async () => await ResolveAddressToCoordinates(),
+                                                      () => connectivity.NetworkAccess == NetworkAccess.Internet);
+
+        connectivity.ConnectivityChanged += Connectivity_ConnectivityChanged;
+
+        // Initial connectivity check
+        CheckConnectivity();
     }
 
+    #region PROPERTIES
     public string Mode { get; set; }
 
-    #region PROPERTIES
     public ObservableCollection<Agent> Agents { get; }
 
     private Property _property;
@@ -39,7 +50,6 @@ public class AddEditPropertyPageViewModel : BaseViewModel
                 SelectedAgent = Agents.FirstOrDefault(x => x.Id == _property?.AgentId);
             }
 
-            // When editing, resolve location from address if available
             if (!string.IsNullOrWhiteSpace(_property?.Address))
             {
                 _ = ResolveAddressToLocation(_property.Address);
@@ -61,14 +71,14 @@ public class AddEditPropertyPageViewModel : BaseViewModel
         }
     }
 
-    string statusMessage;
+    private string statusMessage;
     public string StatusMessage
     {
         get => statusMessage;
         set => SetProperty(ref statusMessage, value);
     }
 
-    Color statusColor;
+    private Color statusColor;
     public Color StatusColor
     {
         get => statusColor;
@@ -88,6 +98,13 @@ public class AddEditPropertyPageViewModel : BaseViewModel
         get => longitude;
         set => SetProperty(ref longitude, value);
     }
+
+    private bool isGeocodingEnabled;
+    public bool IsGeocodingEnabled
+    {
+        get => isGeocodingEnabled;
+        set => SetProperty(ref isGeocodingEnabled, value);
+    }
     #endregion
 
     #region COMMANDS
@@ -96,44 +113,14 @@ public class AddEditPropertyPageViewModel : BaseViewModel
 
     private Command cancelSaveCommand;
     public ICommand CancelSaveCommand => cancelSaveCommand ??= new Command(async () => await Shell.Current.GoToAsync(".."));
-    public ICommand GetCoordinatesFromAddressCommand { get; }
+
     public ICommand GetCurrentLocationCommand { get; }
+    public ICommand GetCoordinatesFromAddressCommand { get; }
     #endregion
-    private async Task ResolveAddressToCoordinates()
-    {
-        if (string.IsNullOrWhiteSpace(Property.Address))
-        {
-            await Shell.Current.DisplayAlert("Address Missing", "Please enter an address first.", "OK");
-            return;
-        }
-
-        try
-        {
-            var locations = await Geocoding.Default.GetLocationsAsync(Property.Address);
-            var location = locations?.FirstOrDefault();
-
-            if (location != null)
-            {
-                Property.Latitude = location.Latitude;
-                Property.Longitude = location.Longitude;
-
-                Latitude = location.Latitude.ToString("F6");
-                Longitude = location.Longitude.ToString("F6");
-            }
-            else
-            {
-                await Shell.Current.DisplayAlert("Not Found", "Could not find coordinates for the entered address.", "OK");
-            }
-        }
-        catch (Exception ex)
-        {
-            await Shell.Current.DisplayAlert("Error", $"Failed to get coordinates: {ex.Message}", "OK");
-        }
-    }
 
     private async Task SaveProperty()
     {
-        if (IsValid() == false)
+        if (!IsValid())
         {
             StatusMessage = "Please fill in all required fields";
             StatusColor = Colors.Red;
@@ -156,7 +143,7 @@ public class AddEditPropertyPageViewModel : BaseViewModel
     }
 
     /// <summary>
-    /// Gets the device's current location (used when pressing the Thumbtack button).
+    /// Reverse geocoding: get current location and fill address
     /// </summary>
     private async Task GetCurrentLocation()
     {
@@ -173,13 +160,10 @@ public class AddEditPropertyPageViewModel : BaseViewModel
                 Property.Latitude = location.Latitude;
                 Property.Longitude = location.Longitude;
 
-                // Perform reverse geocoding
                 var placemarks = await Geocoding.Default.GetPlacemarksAsync(location.Latitude, location.Longitude);
                 var placemark = placemarks?.FirstOrDefault();
-
                 if (placemark != null)
                 {
-                    // Build a friendly address string
                     Property.Address = $"{placemark.Thoroughfare} {placemark.SubThoroughfare}, {placemark.Locality}, {placemark.PostalCode}, {placemark.CountryName}";
                 }
             }
@@ -191,16 +175,49 @@ public class AddEditPropertyPageViewModel : BaseViewModel
         }
     }
 
+    /// <summary>
+    /// Forward geocoding: get coordinates from entered address
+    /// </summary>
+    private async Task ResolveAddressToCoordinates()
+    {
+        if (string.IsNullOrWhiteSpace(Property.Address))
+        {
+            await Shell.Current.DisplayAlert("Address Missing", "Please enter an address first.", "OK");
+            return;
+        }
+
+        try
+        {
+            var locations = await Geocoding.Default.GetLocationsAsync(Property.Address);
+            var location = locations?.FirstOrDefault();
+
+            if (location != null)
+            {
+                Latitude = location.Latitude.ToString("F6");
+                Longitude = location.Longitude.ToString("F6");
+
+                Property.Latitude = location.Latitude;
+                Property.Longitude = location.Longitude;
+            }
+            else
+            {
+                await Shell.Current.DisplayAlert("Not Found", "Could not find coordinates for the entered address.", "OK");
+            }
+        }
+        catch (Exception ex)
+        {
+            await Shell.Current.DisplayAlert("Error", $"Failed to get coordinates: {ex.Message}", "OK");
+        }
+    }
 
     /// <summary>
-    /// Resolves the property address into latitude/longitude using Geocoding.
+    /// Geocoding from address to location (used when editing existing property)
     /// </summary>
     private async Task ResolveAddressToLocation(string address)
     {
         try
         {
-            var locations = await Geocoding.GetLocationsAsync(address);
-
+            var locations = await Geocoding.Default.GetLocationsAsync(address);
             var location = locations?.FirstOrDefault();
             if (location != null)
             {
@@ -208,10 +225,44 @@ public class AddEditPropertyPageViewModel : BaseViewModel
                 Longitude = location.Longitude.ToString("F6");
             }
         }
-        catch (Exception ex)
+        catch
         {
-            StatusMessage = $"Kunne ikke finde lokation for adressen: {ex.Message}";
-            StatusColor = Colors.Red;   
+            // Silent fail
         }
+    }
+
+    /// <summary>
+    /// Connectivity check and alerts
+    /// </summary>
+    private void CheckConnectivity()
+    {
+        if (connectivity.NetworkAccess != NetworkAccess.Internet)
+        {
+            IsGeocodingEnabled = false;
+            MainThread.BeginInvokeOnMainThread(async () =>
+            {
+                await Shell.Current.DisplayAlert("No Internet", "No internet connection detected.", "OK");
+            });
+        }
+        else
+        {
+            IsGeocodingEnabled = true;
+            MainThread.BeginInvokeOnMainThread(async () =>
+            {
+                await Shell.Current.DisplayAlert("Online", "Internet connection restored.", "OK");
+            });
+        }
+
+        (GetCoordinatesFromAddressCommand as Command)?.ChangeCanExecute();
+    }
+
+    private void Connectivity_ConnectivityChanged(object sender, ConnectivityChangedEventArgs e)
+    {
+        CheckConnectivity();
+    }
+
+    public void Dispose()
+    {
+        connectivity.ConnectivityChanged -= Connectivity_ConnectivityChanged;
     }
 }
