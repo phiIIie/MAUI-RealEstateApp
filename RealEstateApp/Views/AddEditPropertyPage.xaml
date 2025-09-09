@@ -45,14 +45,23 @@
                             </FormattedString>
                         </Label.FormattedText>
                     </Label>
-                    <Grid ColumnDefinitions="*,*,Auto" RowDefinitions="Auto" Margin="0,5,0,0">
+                    <Grid ColumnDefinitions="*,*,Auto,Auto" RowDefinitions="Auto" Margin="0,5,0,0">
                         <Label Text="{Binding Latitude}" Grid.Column="0" />
                         <Label Text="{Binding Longitude}" Grid.Column="1" />
+
+                        <!-- Thumbtack button for current location -->
                         <Button 
                             Text="{x:Static fa:IconFont.Thumbtack}" 
                             FontFamily="FA-solid"
                             Command="{Binding GetCurrentLocationCommand}"
                             Grid.Column="2" />
+
+                        <!-- Home button for manually entered address -->
+                        <Button
+                            Text="{x:Static fa:IconFont.Home}"
+                            FontFamily="FA-solid"
+                            Command="{Binding GetCoordinatesFromAddressCommand}"
+                            Grid.Column="3" />
                     </Grid>
 
                     <Label FontFamily="FA-solid" FontSize="Medium">

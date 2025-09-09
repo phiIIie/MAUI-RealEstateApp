@@ -17,6 +17,7 @@ public class AddEditPropertyPageViewModel : BaseViewModel
         this.service = service;
         Agents = new ObservableCollection<Agent>(service.GetAgents());
         GetCurrentLocationCommand = new Command(async () => await GetCurrentLocation());
+        GetCoordinatesFromAddressCommand = new Command(async () => await ResolveAddressToCoordinates());
     }
 
     public string Mode { get; set; }
@@ -95,9 +96,40 @@ public class AddEditPropertyPageViewModel : BaseViewModel
 
     private Command cancelSaveCommand;
     public ICommand CancelSaveCommand => cancelSaveCommand ??= new Command(async () => await Shell.Current.GoToAsync(".."));
-
+    public ICommand GetCoordinatesFromAddressCommand { get; }
     public ICommand GetCurrentLocationCommand { get; }
     #endregion
+    private async Task ResolveAddressToCoordinates()
+    {
+        if (string.IsNullOrWhiteSpace(Property.Address))
+        {
+            await Shell.Current.DisplayAlert("Address Missing", "Please enter an address first.", "OK");
+            return;
+        }
+
+        try
+        {
+            var locations = await Geocoding.Default.GetLocationsAsync(Property.Address);
+            var location = locations?.FirstOrDefault();
+
+            if (location != null)
+            {
+                Property.Latitude = location.Latitude;
+                Property.Longitude = location.Longitude;
+
+                Latitude = location.Latitude.ToString("F6");
+                Longitude = location.Longitude.ToString("F6");
+            }
+            else
+            {
+                await Shell.Current.DisplayAlert("Not Found", "Could not find coordinates for the entered address.", "OK");
+            }
+        }
+        catch (Exception ex)
+        {
+            await Shell.Current.DisplayAlert("Error", $"Failed to get coordinates: {ex.Message}", "OK");
+        }
+    }
 
     private async Task SaveProperty()
     {
@@ -140,6 +172,16 @@ public class AddEditPropertyPageViewModel : BaseViewModel
 
                 Property.Latitude = location.Latitude;
                 Property.Longitude = location.Longitude;
+
+                // Perform reverse geocoding
+                var placemarks = await Geocoding.Default.GetPlacemarksAsync(location.Latitude, location.Longitude);
+                var placemark = placemarks?.FirstOrDefault();
+
+                if (placemark != null)
+                {
+                    // Build a friendly address string
+                    Property.Address = $"{placemark.Thoroughfare} {placemark.SubThoroughfare}, {placemark.Locality}, {placemark.PostalCode}, {placemark.CountryName}";
+                }
             }
         }
         catch (Exception ex)
@@ -148,6 +190,7 @@ public class AddEditPropertyPageViewModel : BaseViewModel
             StatusColor = Colors.Red;
         }
     }
+
 
     /// <summary>
     /// Resolves the property address into latitude/longitude using Geocoding.
