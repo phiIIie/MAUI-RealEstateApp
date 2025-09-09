@@ -3,18 +3,19 @@
     x:Class="RealEstateApp.Views.PropertyListPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:fa="clr-namespace:FontAwesome"
+    xmlns:fa="clr-namespace:FontAwesome"    
     xmlns:models="clr-namespace:RealEstateApp.Models"
     xmlns:vm="clr-namespace:RealEstateApp.ViewModels"
     Title="PropertyListPage"
     x:DataType="vm:PropertyListPageViewModel">
 
     <ContentPage.ToolbarItems>
-        <ToolbarItem Text="Add" />
+        <ToolbarItem Text="Add" Command="{Binding GoToAddPropertyCommand}"/>
     </ContentPage.ToolbarItems>
 
-    <RefreshView>
-
+    <RefreshView
+        IsRefreshing="{Binding IsRefreshing}" Command="{Binding GetPropertiesCommand}">
+        
         <CollectionView
             BackgroundColor="LightGray"
             ItemsSource="{Binding PropertiesCollection}"
@@ -23,10 +24,11 @@
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="models:PropertyListItem">
                     <Grid Padding="5">
-                        <Frame HasShadow="True">
-                            <Frame.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vm:PropertyListPageViewModel}}, Path=GoToDetailsCommand}" CommandParameter="{Binding .}" />
-                            </Frame.GestureRecognizers>
+                        <Border>
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer  Command="{Binding Source={RelativeSource AncestorType={x:Type vm:PropertyListPageViewModel}}, Path=GoToDetailsCommand}" 
+    CommandParameter="{Binding .}"></TapGestureRecognizer>
+                            </Border.GestureRecognizers>
                             <Grid
                                 Margin="0"
                                 Padding="0"
@@ -90,7 +92,7 @@
                                         Text="{Binding Property.LandSize, StringFormat='Land Size: {0} &#x33a1;'}" />
                                 </Grid>
                             </Grid>
-                        </Frame>
+                        </Border>
                     </Grid>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
