@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 namespace RealEstateApp.Models;
 public class PropertyListItem : INotifyPropertyChanged
 {
+    public double distance   { get; set; }
     public PropertyListItem(Property property)
     {
         Property = property;

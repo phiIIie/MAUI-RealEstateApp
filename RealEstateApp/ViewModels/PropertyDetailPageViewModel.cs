@@ -40,7 +40,7 @@ public class PropertyDetailPageViewModel : BaseViewModel
     {
         await Shell.Current.GoToAsync($"{nameof(AddEditPropertyPage)}?mode=editproperty", true, new Dictionary<string, object>
     {
-        { "MyProperty", Property }
+        { "MyProperty", Property }   
     });
     }
 
