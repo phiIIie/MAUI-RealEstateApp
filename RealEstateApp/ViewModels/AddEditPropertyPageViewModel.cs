@@ -5,6 +5,7 @@ using Microsoft.Maui.Devices;
 using Microsoft.Maui.Networking;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
+using RealEstateApp.Views;
 
 namespace RealEstateApp.ViewModels;
 
@@ -25,6 +26,7 @@ public class AddEditPropertyPageViewModel : BaseViewModel
         GetCurrentLocationCommand = new Command(async () => await GetCurrentLocation());
         GeocodeAddressCommand = new Command(async () => await GeocodeAddress(), () => IsConnected);
         ToggleFlashlightCommand = new Command(async () => await ToggleFlashlight());
+        goToCompassPage = new Command(async () => await NavigateToCompass());
 
         // Subscribe to connectivity changes
         connectivity.ConnectivityChanged += Connectivity_ConnectivityChanged;
@@ -107,6 +109,8 @@ public class AddEditPropertyPageViewModel : BaseViewModel
 
     private Command cancelSaveCommand;
     public ICommand CancelSaveCommand => cancelSaveCommand ??= new Command(async () => await Shell.Current.GoToAsync(".."));
+    public Command goToCompassPage;
+    public ICommand GoToCompassPageCommand => goToCompassPage ??= new Command(async () => await Shell.Current.GoToAsync("compasspage"));
     #endregion
 
     #region CONNECTIVITY
@@ -183,7 +187,22 @@ public class AddEditPropertyPageViewModel : BaseViewModel
             StatusColor = Colors.Red;
         }
     }
+    private async Task NavigateToCompass()
+    {
+        if (Property == null)
+        {
+            await App.Current.MainPage.DisplayAlert("Error", "No property selected", "OK");
+            return;
+        }
 
+        // Pass Property as query parameter
+        var navParams = new Dictionary<string, object>
+        {
+            { "MyProperty", Property }
+        };
+
+        await Shell.Current.GoToAsync(nameof(CompassPage), navParams);  
+    }
     private async Task ResolveAddressToLocation(string address)
     {
         try

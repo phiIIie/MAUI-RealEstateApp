@@ -10,5 +10,7 @@ public partial class AppShell : Shell
 
 		Routing.RegisterRoute(nameof(PropertyDetailPage), typeof(PropertyDetailPage));
         Routing.RegisterRoute(nameof(AddEditPropertyPage), typeof(AddEditPropertyPage));
+		Routing.RegisterRoute("AddEditPropertyPage/{PropertyId}", typeof(AddEditPropertyPage));
+		Routing.RegisterRoute("CompassPage", typeof(CompassPage));
     }
 }

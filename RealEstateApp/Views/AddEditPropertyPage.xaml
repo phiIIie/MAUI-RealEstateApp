@@ -146,6 +146,21 @@
                         </Label.FormattedText>
                     </Label>
                     <Editor Margin="0" AutoSize="TextChanges" FontSize="Medium" IsSpellCheckEnabled="False" IsTextPredictionEnabled="False" Keyboard="Text" Text="{Binding Property.Description}" />
+                    <!-- Aspect -->
+                    <Label FontSize="Medium">
+                        <Label.FormattedText>
+                            <FormattedString>
+                                <Span FontFamily="FA-solid" Text="{x:Static fa:IconFont.DraftingCompass}" />
+                                <Span Text=" " />
+                                <Span Text="Aspect" />
+                            </FormattedString>
+                        </Label.FormattedText>
+                    </Label>
+                    <Entry FontSize="Medium" Text="{Binding Property.Aspect}" />
+                    <Button
+    Text="{x:Static fa:IconFont.DraftingCompass}"
+    FontFamily="FA-solid"
+    Command="{Binding GoToCompassPageCommand}" />
 
                     <!-- Agent -->
                     <Label FontSize="Medium">

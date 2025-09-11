@@ -28,6 +28,8 @@ public static class MauiProgram
         builder.Services.AddSingleton<IPropertyService, MockRepository>();
         builder.Services.AddSingleton<PropertyListPage>();
         builder.Services.AddSingleton<PropertyListPageViewModel>();
+        builder.Services.AddSingleton<CompassPage>();
+        builder.Services.AddSingleton<CompassViewModel>();
 
         builder.Services.AddTransient<PropertyDetailPage>();
         builder.Services.AddTransient<PropertyDetailPageViewModel>();
