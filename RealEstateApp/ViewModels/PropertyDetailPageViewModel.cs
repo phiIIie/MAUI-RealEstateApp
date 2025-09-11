@@ -196,7 +196,7 @@ public class PropertyDetailPageViewModel : BaseViewModel
 
         try
         {
-            var location = new Location(Property.Latitude, Property.Longitude);
+            Location location = new Location(Property.Latitude, Property.Longitude);
             var options = new MapLaunchOptions
             {
                 Name = Property.Address,
