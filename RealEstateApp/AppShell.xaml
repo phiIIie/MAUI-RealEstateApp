@@ -16,4 +16,9 @@
         ContentTemplate="{DataTemplate views:AboutPage}"
         Route="about" />
 
+    <ShellContent
+        Title="HeightCalculator"
+        ContentTemplate="{DataTemplate views:HeightCalculatorPage}"
+        Route="HeightCalculatorPage" />
+
 </Shell>
