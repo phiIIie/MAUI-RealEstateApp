@@ -1,9 +1,11 @@
-﻿using RealEstateApp.Models;
+﻿using System.Windows.Input;
+using RealEstateApp.Models;
 using RealEstateApp.Services;
+using Microsoft.Maui.ApplicationModel.Communication;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using RealEstateApp.Views;
-using System.Windows.Input;
-using Microsoft.Maui.Devices.Sensors; // For Text-to-Speech
-using Microsoft.Maui.ApplicationModel; // For TextToSpeech
 
 namespace RealEstateApp.ViewModels;
 
@@ -56,45 +58,156 @@ public class PropertyDetailPageViewModel : BaseViewModel
 
     private async Task SpeakDescription()
     {
-        if (Property?.Description == null)
-            return;
+        if (Property?.Description == null) return;
 
         try
         {
             cts = new CancellationTokenSource();
             IsSpeaking = true;
-
             await TextToSpeech.Default.SpeakAsync(Property.Description);
-
         }
-        catch (OperationCanceledException)
-        {
-            // cancelled, ignore
-        }
+        catch (OperationCanceledException) { }
         finally
         {
             IsSpeaking = false;
-            cts.Dispose();
+            cts?.Dispose();
             cts = null;
         }
     }
 
     private void StopSpeaking()
     {
-        if (cts != null && !cts.IsCancellationRequested)
+        if (cts != null && !cts.IsCancellationRequested) cts.Cancel();
+    }
+    #endregion
+
+    #region Edit Property
+    private Command editPropertyCommand;
+    public ICommand EditPropertyCommand => editPropertyCommand ??= new Command(async () => await GotoEditProperty());
+
+    private async Task GotoEditProperty()
+    {
+        await Shell.Current.GoToAsync($"{nameof(AddEditPropertyPage)}?mode=editproperty", true,
+            new Dictionary<string, object> { { "MyProperty", Property } });
+    }
+    #endregion
+
+    #region Vendor Phone Tap
+    public ICommand VendorPhoneTappedCommand => new Command(async () => await OnVendorPhoneTapped());
+
+    private async Task OnVendorPhoneTapped()
+    {
+        if (string.IsNullOrWhiteSpace(Property?.Vendor?.Phone)) return;
+
+        try
         {
-            cts.Cancel();
+            var action = await Shell.Current.DisplayActionSheet("Contact Vendor", "Cancel", null, "Call", "SMS");
+
+            switch (action)
+            {
+                case "Call":
+                    if (PhoneDialer.Default.IsSupported)
+                        PhoneDialer.Default.Open(Property.Vendor.Phone);
+                    else
+                        await Shell.Current.DisplayAlert("Error", "Calling not supported on this device.", "OK");
+                    break;
+
+                case "SMS":
+                    if (Sms.Default.IsComposeSupported)
+                    {
+                        var message = new SmsMessage(
+                            $"Hej, {Property.Vendor.FirstName}, angående {Property.Address}",
+                            Property.Vendor.Phone
+                        );
+                        await Sms.Default.ComposeAsync(message);
+                    }
+                    else
+                        await Shell.Current.DisplayAlert("Error", "SMS not supported on this device.", "OK");
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            await Shell.Current.DisplayAlert("Error", $"Could not perform action: {ex.Message}", "OK");
         }
     }
     #endregion
-        
-    private Command editPropertyCommand;
-    public ICommand EditPropertyCommand => editPropertyCommand ??= new Command(async () => await GotoEditProperty());
-    async Task GotoEditProperty()
+
+    #region Vendor Email Tap
+    public ICommand VendorEmailTappedCommand => new Command(async () => await OnVendorEmailTapped());
+
+    private async Task OnVendorEmailTapped()
     {
-        await Shell.Current.GoToAsync($"{nameof(AddEditPropertyPage)}?mode=editproperty", true, new Dictionary<string, object>
+        if (string.IsNullOrWhiteSpace(Property?.Vendor?.Email)) return;
+
+        try
         {
-            { "MyProperty", Property }
-        });
+            var folder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            var attachmentFilePath = Path.Combine(folder, "property.txt");
+            File.WriteAllText(attachmentFilePath, $"{Property.Address}");
+
+            if (Email.Default.IsComposeSupported)
+            {
+                var message = new EmailMessage
+                {
+                    Subject = $"Property Inquiry: {Property.Address}",
+                    Body = $"Hej {Property.Vendor.FirstName},\n\nJeg er interesseret i ejendommen på {Property.Address}.",
+                    To = new List<string> { Property.Vendor.Email },
+                };
+
+                message.Attachments.Add(new EmailAttachment(attachmentFilePath));
+                await Email.Default.ComposeAsync(message);
+            }
+            else
+            {
+                await Shell.Current.DisplayAlert("Error", "Email is not supported on this device.", "OK");
+            }
+        }
+        catch (Exception ex)
+        {
+            await Shell.Current.DisplayAlert("Error", $"Could not send email: {ex.Message}", "OK");
+        }
     }
+    #endregion
+
+    #region Maps Commands
+    public ICommand OpenMapCommand => new Command(async () => await OnOpenMap());
+    public ICommand NavigateMapCommand => new Command(async () => await OnNavigateMap());
+
+    private async Task OnOpenMap()
+    {
+        if (Property == null || Property.Latitude == 0 || Property.Longitude == 0) return;
+
+        try
+        {
+            var location = new Location(Property.Latitude, Property.Longitude);
+            var options = new MapLaunchOptions { Name = Property.Address };
+            await Map.OpenAsync(location, options);
+        }
+        catch (Exception ex)
+        {
+            await Shell.Current.DisplayAlert("Error", $"Cannot open map: {ex.Message}", "OK");
+        }
+    }
+
+    private async Task OnNavigateMap()
+    {
+        if (Property == null || Property.Latitude == 0 || Property.Longitude == 0) return;
+
+        try
+        {
+            var location = new Location(Property.Latitude, Property.Longitude);
+            var options = new MapLaunchOptions
+            {
+                Name = Property.Address,
+                NavigationMode = NavigationMode.Driving
+            };
+            await Map.OpenAsync(location, options);
+        }
+        catch (Exception ex)
+        {
+            await Shell.Current.DisplayAlert("Error", $"Cannot open navigation: {ex.Message}", "OK");
+        }
+    }
+    #endregion
 }

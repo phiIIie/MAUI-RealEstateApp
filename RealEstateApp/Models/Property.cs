@@ -24,6 +24,7 @@ namespace RealEstateApp.Models
 
             ImageUrls = new List<string>();
         }
+        public Vendor Vendor { get; set; }
 
         public string Id { get; set; }
         public string Address { get; set; }

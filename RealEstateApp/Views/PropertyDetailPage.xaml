@@ -12,112 +12,89 @@
         <ToolbarItem Command="{Binding EditPropertyCommand}" Text="Edit" />
     </ContentPage.ToolbarItems>
 
-    <ScrollView BackgroundColor="White">
-        <Grid
-            Padding="15"
-            RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
-            RowSpacing="10">
-            <Image
-                Grid.Row="0"
-                Margin="-10,-10,-10,0"
-                Aspect="AspectFill"
-                HeightRequest="225"
-                Source="{Binding Property.MainImageUrl}" />
-            <Label
-                Grid.Row="1"
-                FontAttributes="Bold"
-                FontSize="16"
-                LineBreakMode="NoWrap"
-                Text="{Binding Property.Price, StringFormat='{0:C0}'}" />
-            <Label
-                Grid.Row="2"
-                FontSize="16"
-                LineBreakMode="NoWrap"
-                Text="{Binding Property.Address}" />
-            <Grid
-                Grid.Row="3"
-                ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto"
-                ColumnSpacing="10">
-                <Label
-                    Grid.Column="0"
-                    FontFamily="FA-solid"
-                    FontSize="16"
-                    Text="{Static fa:IconFont.Bed}"
-                    VerticalOptions="Center" />
-                <Label
-                    Grid.Column="1"
-                    FontSize="16"
-                    Text="{Binding Property.Beds}" />
-                <Label
-                    Grid.Column="2"
-                    FontFamily="FA-solid"
-                    FontSize="16"
-                    Text="{Static fa:IconFont.Bath}"
-                    VerticalOptions="Center" />
-                <Label
-                    Grid.Column="3"
-                    FontSize="16"
-                    Text="{Binding Property.Baths}" />
-                <Label
-                    Grid.Column="4"
-                    FontFamily="FA-solid"
-                    FontSize="16"
-                    Text="{Static fa:IconFont.Parking}"
-                    VerticalOptions="Center" />
-                <Label
-                    Grid.Column="5"
-                    FontSize="16"
-                    Text="{Binding Property.Parking}" />
+    <ScrollView BackgroundColor="#F8F8F8">
+        <VerticalStackLayout Padding="15" Spacing="15">
+
+            <!-- Property Image -->
+            <Frame HasShadow="True" CornerRadius="10" Padding="0">
+                <Image Aspect="AspectFill" HeightRequest="225" Source="{Binding Property.MainImageUrl}" />
+            </Frame>
+
+            <!-- Price & Address -->
+            <Label FontAttributes="Bold" FontSize="20" TextColor="#333"
+                   Text="{Binding Property.Price, StringFormat='{0:C0}'}" />
+            <Label FontSize="16" TextColor="#555" Text="{Binding Property.Address}" />
+
+            <!-- Property Details Icons -->
+            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="10">
+                <Label Grid.Column="0" FontFamily="FA-solid" FontSize="16" Text="{Static fa:IconFont.Bed}" VerticalOptions="Center"/>
+                <Label Grid.Column="1" FontSize="16" Text="{Binding Property.Beds}" VerticalOptions="Center"/>
+                <Label Grid.Column="2" FontFamily="FA-solid" FontSize="16" Text="{Static fa:IconFont.Bath}" VerticalOptions="Center"/>
+                <Label Grid.Column="3" FontSize="16" Text="{Binding Property.Baths}" VerticalOptions="Center"/>
+                <Label Grid.Column="4" FontFamily="FA-solid" FontSize="16" Text="{Static fa:IconFont.Parking}" VerticalOptions="Center"/>
+                <Label Grid.Column="5" FontSize="16" Text="{Binding Property.Parking}" VerticalOptions="Center"/>
             </Grid>
-            <Label
-                Grid.Row="4"
-                FontSize="14"
-                Text="{Binding Property.LandSize, StringFormat='Land size: {0} &#x33a1;'}" />
-            <Grid Grid.Row="6" Margin="0,0,0,20" ColumnDefinitions="*,Auto,Auto">
-                <Label Text="{Binding Property.Description}" Grid.Column="0" FontSize="14" />
-                <Button 
-                    Grid.Column="1"
-                    Text="{x:Static fa:IconFont.Play}" 
-                    FontFamily="FA-solid"
-                    Command="{Binding SpeakCommand}"
-                    />
-                <Button
-                    Grid.Column="2"
-                    Text="{x:Static fa:IconFont.Stop}"
-                    FontFamily="FA-solid"
-                    Command="{Binding StopCommand}"
-                    IsVisible="{Binding IsSpeaking}" />
-            </Grid>
-            <Label
-                Grid.Row="7"
-                FontAttributes="Bold"
-                FontSize="14"
-                Text="Listed by:" />
-            <Grid Grid.Row="8" ColumnDefinitions="auto, *">
-                <Image
-                    Grid.Column="0"
-                    Source="{Binding Agent.ImageUrl}"
-                    VerticalOptions="Start"
-                    WidthRequest="100" />
-                <Grid
-                    Grid.Column="1"
-                    Margin="10"
-                    RowDefinitions="Auto,Auto,Auto">
-                    <Label
-                        Grid.Row="0"
-                        FontAttributes="Bold"
-                        FontSize="14"
-                        Text="{Binding Agent.Name}" />
-                    <Label
-                        Grid.Row="1"
-                        FontSize="12"
-                        Text="{Binding Agent.Email}" />
-                    <Label
-                        Grid.Row="2" 
-                        FontSize="12"
-                        Text="{Binding Agent.Phone}" />
+
+            <!-- Land Size -->
+            <Label FontSize="14" TextColor="#555" Text="{Binding Property.LandSize, StringFormat='Land size: {0} m²'}" />
+
+            <!-- Description with Speak Buttons -->
+            <Frame BackgroundColor="#FFF" CornerRadius="10" Padding="10">
+                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+                    <Label Grid.Column="0" FontSize="14" TextColor="#333" Text="{Binding Property.Description}" />
+                    <Button Grid.Column="1" Text="{x:Static fa:IconFont.Play}" FontFamily="FA-solid" Command="{Binding SpeakCommand}" />
+                    <Button Grid.Column="2" Text="{x:Static fa:IconFont.Stop}" FontFamily="FA-solid" Command="{Binding StopCommand}" IsVisible="{Binding IsSpeaking}" />
                 </Grid>
+            </Frame>
+
+            <!-- Maps Buttons -->
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                <Button Text="{x:Static fa:IconFont.MapMarkedAlt}" FontFamily="FA-solid" Command="{Binding OpenMapCommand}" />
+                <Button Text="{x:Static fa:IconFont.Directions}" FontFamily="FA-solid" Command="{Binding NavigateMapCommand}" />
             </Grid>
-        </Grid>
+
+            <!-- Agent Info -->
+            <Label FontAttributes="Bold" FontSize="14" Text="Listed by:" />
+            <Frame HasShadow="True" CornerRadius="10" Padding="10" BackgroundColor="#FFF">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                    <Image Grid.Column="0" Source="{Binding Agent.ImageUrl}" WidthRequest="80" HeightRequest="80" Aspect="AspectFill" />
+                    <VerticalStackLayout Grid.Column="1" Spacing="5">
+                        <Label FontAttributes="Bold" FontSize="14" Text="{Binding Agent.Name}" />
+                        <Label FontSize="12" TextColor="#555" Text="{Binding Agent.Email}" />
+                        <Label FontSize="12" TextColor="#555" Text="{Binding Agent.Phone}" />
+                    </VerticalStackLayout>
+                </Grid>
+            </Frame>
+
+            <!-- Vendor Info -->
+            <Label FontAttributes="Bold" FontSize="14" Text="Vendor Details:" />
+            <Frame HasShadow="True" CornerRadius="10" Padding="10" BackgroundColor="#FFF">
+                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="5" ColumnSpacing="10">
+                    <Label Grid.Row="0" Grid.Column="0" FontAttributes="Bold" Text="First Name:" />
+                    <Label Grid.Row="0" Grid.Column="1" Text="{Binding Property.Vendor.FirstName}" />
+
+                    <Label Grid.Row="1" Grid.Column="0" FontAttributes="Bold" Text="Last Name:" />
+                    <Label Grid.Row="1" Grid.Column="1" Text="{Binding Property.Vendor.LastName}" />
+
+                    <Label Grid.Row="2" Grid.Column="0" FontAttributes="Bold" Text="Full Name:" />
+                    <Label Grid.Row="2" Grid.Column="1" Text="{Binding Property.Vendor.FullName}" />
+
+                    <Label Grid.Row="3" Grid.Column="0" FontAttributes="Bold" Text="Email:" />
+                    <Label Grid.Row="3" Grid.Column="1" Text="{Binding Property.Vendor.Email}" TextColor="Blue">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding VendorEmailTappedCommand}" />
+                        </Label.GestureRecognizers>
+                    </Label>
+
+                    <Label Grid.Row="4" Grid.Column="0" FontAttributes="Bold" Text="Phone:" />
+                    <Label Grid.Row="4" Grid.Column="1" Text="{Binding Property.Vendor.Phone}" TextColor="Blue">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding VendorPhoneTappedCommand}" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                </Grid>
+            </Frame>
+
+        </VerticalStackLayout>
     </ScrollView>
 </ContentPage>
