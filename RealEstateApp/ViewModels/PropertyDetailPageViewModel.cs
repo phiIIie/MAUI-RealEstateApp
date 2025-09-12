@@ -1,10 +1,6 @@
 ﻿using System.Windows.Input;
 using RealEstateApp.Models;
 using RealEstateApp.Services;
-using Microsoft.Maui.ApplicationModel.Communication;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using RealEstateApp.Views;
 
 namespace RealEstateApp.ViewModels;
