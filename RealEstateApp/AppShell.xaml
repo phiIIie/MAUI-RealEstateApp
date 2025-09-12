@@ -20,5 +20,9 @@
         Title="HeightCalculator"
         ContentTemplate="{DataTemplate views:HeightCalculatorPage}"
         Route="HeightCalculatorPage" />
+    <ShellContent
+        Title="TTS Settings"
+        ContentTemplate="{DataTemplate views:SettingsPage}"
+        Route="SettingsPage"/>
 
 </Shell>

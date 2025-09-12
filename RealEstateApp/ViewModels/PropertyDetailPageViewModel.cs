@@ -60,7 +60,18 @@ public class PropertyDetailPageViewModel : BaseViewModel
         {
             cts = new CancellationTokenSource();
             IsSpeaking = true;
-            await TextToSpeech.Default.SpeakAsync(Property.Description);
+
+            var volume = Preferences.Get(nameof(SettingsPageViewModel.Volume), 0.5);
+            var pitch = Preferences.Get(nameof(SettingsPageViewModel.Pitch), 1.0);
+
+
+            var settings = new SpeechOptions
+            {
+                Volume = (float)volume,
+                Pitch = (float)pitch
+            };
+
+            await TextToSpeech.Default.SpeakAsync(Property.Description, settings, cts.Token);
         }
         catch (OperationCanceledException) { }
         finally
@@ -70,6 +81,7 @@ public class PropertyDetailPageViewModel : BaseViewModel
             cts = null;
         }
     }
+
 
     private void StopSpeaking()
     {

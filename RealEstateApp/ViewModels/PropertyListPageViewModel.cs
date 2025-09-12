@@ -50,7 +50,6 @@ public class PropertyListPageViewModel : BaseViewModel
         {
             IsBusy = true;
 
-            // 1. Ensure we have the current location
             if (lastKnownLocation == null)
             {
                 var request = new GeolocationRequest(GeolocationAccuracy.Medium);
@@ -63,7 +62,6 @@ public class PropertyListPageViewModel : BaseViewModel
                 return;
             }
 
-            // 2. Fetch properties
             var properties = service.GetProperties();
             var listItems = new List<PropertyListItem>();
 
@@ -71,7 +69,6 @@ public class PropertyListPageViewModel : BaseViewModel
             {
                 var item = new PropertyListItem(property);
 
-                // Calculate distance (without sorting)
                 item.distance = Location.CalculateDistance(
                     lastKnownLocation.Latitude,
                     lastKnownLocation.Longitude,
@@ -83,7 +80,6 @@ public class PropertyListPageViewModel : BaseViewModel
                 listItems.Add(item);
             }
 
-            // 3. Populate collection (unsorted)
             PropertiesCollection.Clear();
             foreach (var item in listItems)
                 PropertiesCollection.Add(item);
@@ -105,7 +101,6 @@ public class PropertyListPageViewModel : BaseViewModel
     {
         try
         {
-            // Sort the collection by distance only when the button is clicked
             var sorted = PropertiesCollection.OrderBy(p => p.distance).ToList();
             PropertiesCollection.Clear();
             foreach (var item in sorted)
