@@ -32,7 +32,9 @@ public static class MauiProgram
         builder.Services.AddSingleton<CompassViewModel>();
         builder.Services.AddSingleton<HeightCalculatorPageViewModel>();
         builder.Services.AddSingleton<HeightCalculatorPage>();
-
+        builder.Services.AddSingleton<IPropertyService, MockRepository>();
+        builder.Services.AddTransient<LoginPageViewModel>();
+        builder.Services.AddTransient<LoginPage>();
         builder.Services.AddTransient<PropertyDetailPage>();
         builder.Services.AddTransient<PropertyDetailPageViewModel>();
 

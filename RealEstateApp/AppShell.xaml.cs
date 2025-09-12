@@ -14,5 +14,6 @@ public partial class AppShell : Shell
 		Routing.RegisterRoute("CompassPage", typeof(CompassPage));
 		Routing.RegisterRoute("HeightCalculatorPage", typeof(HeightCalculatorPage));
 		Routing.RegisterRoute("SettingsPage", typeof(SettingsPage));
+		Routing.RegisterRoute(nameof(LoginPage), typeof(LoginPage));
     }
 }

@@ -1,19 +1,31 @@
 ﻿using RealEstateApp.Models;
 using RealEstateApp.Services;
+using Microsoft.Maui.Storage; // SecureStorage
 
 namespace RealEstateApp.Repositories
 {
     public class MockRepository : IPropertyService
     {
+        private List<Agent> _agents;
+        private List<Property> _properties;
+
+        // Dummy users til login
+        private readonly Dictionary<string, string> _users = new()
+        {
+            { "admin", "password" },
+            { "test", "1234" }
+        };
+
+        private const string AccessTokenKey = "AccessToken";
+        private const string RefreshTokenKey = "RefreshToken";
+
         public MockRepository()
         {
             LoadProperties();
             LoadAgents();
         }
 
-        private List<Agent> _agents;
-        private List<Property> _properties;
-
+        #region Properties & Agents
         public List<Agent> GetAgents() => _agents;
         public List<Property> GetProperties() => _properties;
 
@@ -30,12 +42,59 @@ namespace RealEstateApp.Repositories
             else
             {
                 var existingIndex = _properties.IndexOf(existing);
-
                 _properties[existingIndex] = property;
             }
         }
+        #endregion
 
+        #region Login & Logout
+        public async Task<LoginResult> LoginAsync(string username, string password)
+        {
+            if (_users.TryGetValue(username, out var pwd) && pwd == password)
+            {
+                var accessToken = Guid.NewGuid().ToString();
+                var refreshToken = Guid.NewGuid().ToString();
 
+                await SecureStorage.SetAsync(AccessTokenKey, accessToken);
+                await SecureStorage.SetAsync(RefreshTokenKey, refreshToken);
+
+                return new LoginResult
+                {
+                    Succeded = true,
+                    AccessToken = accessToken,
+                    RefreshToken = refreshToken
+                };
+            }
+
+            return new LoginResult { Succeded = false };
+        }
+
+        public async Task<LoginResult> TryAutoLoginAsync()
+        {
+            var accessToken = await SecureStorage.GetAsync(AccessTokenKey);
+            var refreshToken = await SecureStorage.GetAsync(RefreshTokenKey);
+
+            if (!string.IsNullOrEmpty(accessToken) && !string.IsNullOrEmpty(refreshToken))
+            {
+                return new LoginResult
+                {
+                    Succeded = true,
+                    AccessToken = accessToken,
+                    RefreshToken = refreshToken
+                };
+            }
+
+            return new LoginResult { Succeded = false };
+        }
+
+        public void Logout()
+        {
+            SecureStorage.Remove(AccessTokenKey);
+            SecureStorage.Remove(RefreshTokenKey);
+        }
+        #endregion
+
+        #region Mock Data Loaders
         private void LoadProperties()
         {
             _properties = new List<Property>
@@ -153,6 +212,6 @@ namespace RealEstateApp.Repositories
                 $"{GlobalSettings.Instance.ImageBaseUrl}bed_{index}.jpg"
             };
         }
+        #endregion
     }
 }
-

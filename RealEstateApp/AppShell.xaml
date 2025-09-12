@@ -24,5 +24,9 @@
         Title="TTS Settings"
         ContentTemplate="{DataTemplate views:SettingsPage}"
         Route="SettingsPage"/>
+    <ShellContent 
+        Title="Login"
+        ContentTemplate="{DataTemplate views:LoginPage}"
+        Route="LoginPage"/>
 
 </Shell>
